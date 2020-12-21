@@ -1,0 +1,52 @@
+version: "3.8"
+services:
+  webserver:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${DOC_ROOT}:/var/www/html/
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+      - ./nginx/logs/:/var/log/nginx/
+    networks:
+      - backend
+  php:
+    build: './php/'
+    container_name: php
+    depends_on:
+      - webserver
+      - db
+    volumes:
+      - ${DOC_ROOT}:/var/www/html
+    working_dir: /var/www/html
+    networks:
+      - backend
+  db:
+    build: './mysql/'
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    networks:
+      - backend
+  composer:
+    image: composer:latest
+    container_name: composer
+    volumes:
+      - ${DOC_ROOT}:/var/www/html/
+    working_dir: /var/www/html
+  nodejs:
+    image: node:12
+    container_name: nodejs
+    volumes:
+      - ${DOC_ROOT}:/var/www/html/
+    working_dir: /var/www/html
+networks:
+  backend:
+    driver: bridge
